@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<script type="text/javascript" src="date-zh-CN.js">
+</script>
+
+<body>
+    <script type="text/javascript">
+        var loanBeginDate = new Date(2013, 1 - 1, 20);
+        var loanEndDate;
+        var loanPeriod = 1; //贷款的有效时间loan_period划定为:贷款起息日到贷款止日,由前端输入
+        var loanPeriodType = 'year'; //由前端选择
+        switch (loanPeriodType) {
+            case 'year':
+                loanEndDate = new Date(2013, 1 - 1, 20).addYears(loanPeriod);
+                break;
+            case 'month':
+                loanEndDate = new Date(2013, 1 - 1, 20).addMonths(loanPeriod);
+                break;
+            case 'week':
+                loanEndDate = new Date(2013, 1 - 1, 20).addWeeks(loanPeriod);
+                break;
+            case 'days':
+                loanEndDate = new Date(2013, 1 - 1, 20).addDays(loanPeriod);
+                break;
+            default:
+                console.log("Error:No Loan Period Type,Can't Calculate Loan End Date.");
+                break;
+        }
+
+        var prinPeriod = 2; // 贷款还本间隔,默认为月,由前端输入
+        var prinPeriodType = 'month'; //还本间隔类型
+        var prinDate = 14; //贷款还款日指定，由前端输入
+        var interPeriod = 1; //贷款还息间隔,默认为月，由前端输入
+        var interPeriodType = 'month'; //还息间隔类型
+        var interDate = 23; //贷款还息日指定，由前端输入
+
+        var loanTerms = []; //贷款周期还本日期
+        var interTerms = []; //贷款周期还息日期
+
+        var amount = 140000; //贷款本金
+        var rate = 0.04; //年利率
+        var daysOfYear = 360; //记准年天数
+        var testDate = new Date(2013, 1 - 1, 20);
+
+        console.log(loanBeginDate.toString('yyyy-MM-dd'));
+        console.log(loanEndDate.toString('yyyy-MM-dd'));
+
+        //设贷款发放日为3月13号,贷款指定还款日为15号,还款间隔为1个月,则首个还款日为当前3月15号还是下一期4月15号的选择
+        //示例为下一期还本方法的还本期数和还本日期
+        for (testDate.addMonths(prinPeriod); testDate.between(loanBeginDate, loanEndDate); testDate.addMonths(prinPeriod)) {
+            loanTerms.push(testDate.set({
+                day: prinDate
+            }).toString('yyyy-MM-dd'));
+        }
+        if (!loanTerms.some(function(x) {
+                return x == loanEndDate;
+            })) {
+            loanTerms.push(loanEndDate.toString('yyyy-MM-dd'));
+        }
+        console.log("loanTerms:", loanTerms);
+
+        //设贷款发放日为3月13号,贷款指定结息日为20号,还款间隔为1个月,则首个还息日为当期3月20号还是下一期4月20号的选择
+        //示例为下一期还息方法的还息期数和还息日期
+        var prinTermFlag = false; //是否当期还本标志,取前端输入的值
+        var testDate = new Date(2013, 1 - 1, 20);
+        for (testDate.addMonths(interPeriod); testDate.between(loanBeginDate, loanEndDate); testDate.addMonths(interPeriod)) {
+            interTerms.push(testDate.set({
+                day: interDate
+            }).toString('yyyy-MM-dd'));
+        }
+        if (!interTerms.some(function(x) {
+                return x == loanEndDate;
+            })) {
+            interTerms.push(loanEndDate.toString('yyyy-MM-dd'));
+        }
+        console.log("interTerms:", interTerms);
+
+        var perTermPri = amount / loanTerms.length;
+
+        //每期贷款余额
+        var loanPerTermBal = [];
+        for (var i = 0; i < loanTerms.length; i++) {
+            loanPerTermBal.push(amount - perTermPri * i);
+        }
+        console.log("loanPerTermBal:", loanPerTermBal);
+
+        //查找结息日在还本日中的位置
+        var interIndex = interTerms.map(function(j) {
+            return loanTerms.filter(function(x) {
+                return x < j;
+            }).length;
+        });
+        console.log("interIndex:", interIndex);
+
+        //每期应还利息的本金是否跨段
+
+        var priSectionFlag = interTerms.map(function(x) {
+            return loanTerms.some(function(p) {
+                return Date.parse(p).between(Date.parse(x).addMonths(-interPeriod), Date.parse(x));
+            });
+        });
+        console.log("priSectionFlag:", priSectionFlag);
+
+        //还息日有本金跨段情况的日期
+        var priSectionDate = interTerms.map(function(x, i) {
+            if (priSectionFlag[i])
+                return loanTerms.filter(function(k) {
+                    if (Date.parse(k).between(Date.parse(x).addMonths(-interPeriod), Date.parse(x).addDays(-1)))
+                        return k;
+                });
+            else
+                return null;
+        });
+        console.log("priSectionDate:", priSectionDate);
+
+        //利息计算
+        var interBal = interIndex.map(function(x, i) {
+            var s1 = new Date(interTerms[i]);
+            var s3 = interTerms[i - 1] ? new Date(interTerms[i - 1]) : loanBeginDate;
+            //i=0时没有s3
+            if (priSectionFlag[i]) {
+                var s2 = new Date(priSectionDate[i]);
+                return (loanPerTermBal[interIndex[i]] * (s1.getTime() - s2.getTime()) / (24 * 60 * 60 * 1000) +
+                        loanPerTermBal[interIndex[i - 1]] * (s2.getTime() - s3.getTime()) / (24 * 60 * 60 * 1000)) *
+                    rate / daysOfYear;
+            } else {
+                return (loanPerTermBal[interIndex[i]] * Math.round((s1.getTime() - s3.getTime()) / (24 * 60 * 60 * 1000))) * rate / daysOfYear;
+            }
+        });
+        console.log(interBal);
+    </script>
+</body>
+
+</html>
