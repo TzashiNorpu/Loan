@@ -31,26 +31,50 @@
 //     terms =
 // }
 
-var s1 = new Date("2013-02-23 ");
-var s2 = new Date("2013-03-14 ");
-var s3 = new Date("2013-03-23 ");
+// var s1 = new Date("2013-10-27 ");
+// var s2 = new Date("2013-11-24 ");
+// var s3 = new Date("2013-11-27 ");
 // var s3 = new Date("2013-11-14");
 // console.log(s1.getTime(), s2.getTime(), s3.getTime());
-var s4 = s3.getTime() - s1.getTime();
-var tianshu1 = s4 / (24 * 60 * 60 * 1000);
-console.log(tianshu1);
-var s4 = s2.getTime() - s1.getTime();
-var tianshu2 = s4 / (24 * 60 * 60 * 1000);
-console.log(tianshu2);
-var s4 = s3.getTime() - s2.getTime();
-var tianshu3 = s4 / (24 * 60 * 60 * 1000);
-console.log(tianshu3);
-console.log((tianshu2 * 140000 + tianshu3 * 120000) * 4 / 36000);
+// var s4 = s3.getTime() - s1.getTime();
+// var tianshu1 = s4 / (24 * 60 * 60 * 1000);
+// console.log(tianshu1);
+// var s4 = s2.getTime() - s1.getTime();
+// var tianshu2 = s4 / (24 * 60 * 60 * 1000);
+// console.log(tianshu2);
+// var s4 = s3.getTime() - s2.getTime();
+// var tianshu3 = s4 / (24 * 60 * 60 * 1000);
+// console.log(tianshu3);
+// console.log((tianshu2 * 861538.48 + tianshu3 * 753846.15) * 4 / 36000);
 
 
-var s1 = new Date("2013-03-23 ");
-var s2 = new Date("2013-04-23 ");
-var s3 = s2.getTime() - s1.getTime();
-var tianshu = s3 / (24 * 60 * 60 * 1000);
-console.log(tianshu);
-console.log(tianshu * 120000 * 4 / 36000);
+// var s1 = new Date("2013-09-27 ");
+// var s2 = new Date("2013-10-27 ");
+// var s3 = s2.getTime() - s1.getTime();
+// var tianshu = s3 / (24 * 60 * 60 * 1000);
+// console.log(tianshu);
+// console.log(tianshu * 861538.48 * 4 / 36000);
+
+function sortNumber(a, b) {
+    return a - b
+}
+var a = [1, 2, 4, 5, 7, 8, 10, 11, 13, 14, 16, 17, 19, 20, 22, 23, 25, 26, 28, 29, 31, 32, 34, 35, 36];
+var b = [0, 3, 6, 9, 12, 15, 18, 21, 24, 27, , 30, 33, 36]; //
+var m = a.concat(b).sort(sortNumber);
+console.log(m);
+var d = [];
+var e = [];
+
+console.log(b, '++++', a);
+b.map(function(x, i) {
+    d.push(m.indexOf(x) + 1);
+    m[m.indexOf(x)] = null;
+
+});
+console.log(d);
+// console.log(m);
+a.map(function(x, i) {
+    e.push(m.indexOf(x) + 1);
+    m[m.indexOf(x)] = null;
+});
+console.log(e);

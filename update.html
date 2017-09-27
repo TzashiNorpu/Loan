@@ -8,7 +8,7 @@
         var testDateStr = '20/1/2013'; //还息日和还本日都用此变量计算,由前端输入
         var loanBeginDate = new Date.parse(testDateStr);
         var loanEndDate;
-        var loanPeriod = 5; //贷款的有效时间loan_period划定为:贷款起息日到贷款止日,由前端输入
+        var loanPeriod = 3; //贷款的有效时间loan_period划定为:贷款起息日到贷款止日,由前端输入
         var loanPeriodType = 'month'; //由前端选择
         switch (loanPeriodType) {
             case 'year':
@@ -28,18 +28,18 @@
                 break;
         }
 
-        var prinPeriod = 14; // 贷款还本间隔,默认为月,由前端输入
+        var prinPeriod = 8; // 贷款还本间隔,默认为月,由前端输入
         var prinPeriodType = 'day'; //还本间隔类型
-        var prinPeriod = 1; // 贷款还本间隔,默认为月,由前端输入
-        var prinPeriodType = 'month'; //还本间隔类型
-        var prinDate = 13; //贷款还款日指定，由前端输入
+        // var prinPeriod = 1; // 贷款还本间隔,默认为月,由前端输入
+        // var prinPeriodType = 'month'; //还本间隔类型
+        var prinDate = 20; //贷款还款日指定，由前端输入
 
         var interPeriodType = 'day'; //还息间隔类型
-        var interPeriod = 10; //贷款还息间隔,默认为月，由前端输入
+        var interPeriod = 17; //贷款还息间隔,默认为月，由前端输入
         // var interPeriodType = 'month'; //还息间隔类型
-        // var interPeriod = 2; //贷款还息间隔,默认为月，由前端输入
+        // var interPeriod = 1; //贷款还息间隔,默认为月，由前端输入
 
-        var interDate = 15; //贷款还息日指定，由前端输入
+        var interDate = 20; //贷款还息日指定，由前端输入
 
         var loanTerms = []; //贷款周期还本日期
         var interTerms = []; //贷款周期还息日期
@@ -64,7 +64,16 @@
                 s = s.replace(new RegExp("\\{" + i + "\\}", "g"), arguments[i]);
             return s;
         };
-
+        Array.prototype.max = function() {
+            var max = this[0];
+            var len = this.length;
+            for (var i = 1; i < len; i++) {
+                if (this[i] > max) {
+                    max = this[i];
+                }
+            }
+            return max;
+        }
 
         Date.prototype.betweenDays = function(end) {
             // console.log(end.toString('yyyy-MM-dd'));
@@ -72,6 +81,13 @@
             return Math.ceil((end.getTime() - this.getTime()) / (24 * 60 * 60 * 1000));
         };
         // console.log(loanBeginDate.betweenDays(loanEndDate));
+        // Date.prototype.between = function(start, end) {
+        //     if (this != null && start != null && end != null)
+        //         return this.getTime() >= start.getTime() && this.getTime() <= end.getTime();
+        //     else
+        //         return null;
+
+        // }
 
         switch (prinPeriodType) {
             case 'year':
@@ -310,22 +326,26 @@
         //还息区间本金跨段日期
         var priSectionDate = interTerms.map(function(x, i) {
             return loanTerms.filter(function(k) {
-                if (eval("Date.parse(k).between(Date.parse(x).{0}(-interPeriod), Date.parse(x).addDays(-1))".format(interTermsStepType)))
+                if (Date.parse(k).between(Date.parse(interTerms[i - 1] || loanBeginDate.toString('yyyy-MM-dd')), Date.parse(interTerms[i])))
+                // if (eval("Date.parse(k).between(Date.parse(x).{0}(-interPeriod), Date.parse(x).addDays(-1))".format(interTermsStepType)))
                 //还本还息日和贷款发放日在同一天时有问题
                     return k;
+                else
+                    return null;
             });
         });
         // console.log("priSectionDate:", priSectionDate);
 
         //利息计算：查找利息计算区间内相关的所有日期：计息区间的起终点日期和本金分段的日期
         priSectionDate.map(function(x, i) {
-            if (i == 0) {
-                return x.unshift(loanBeginDate.toString('yyyy-MM-dd')) && x.push(interTerms[i]);
+            if (x.indexOf(interTerms[i - 1]) == -1) {
+                x.unshift(interTerms[i - 1] || loanBeginDate.toString('yyyy-MM-dd'));
             };
-            if (i != 0) {
-                return x.unshift(interTerms[i - 1]) && x.push(interTerms[i]);
+            if (x.indexOf(interTerms[i]) == -1) {
+                x.push(interTerms[i]);
             };
         });
+
         console.log('priSectionDate', priSectionDate);
 
         //利息计算：查找利息计算区间所有日期在还本日中的位置
@@ -342,13 +362,48 @@
         var interAmount = [];
         for (var kk = 0; kk < priSectionDate.length; kk++) {
             interAmount[kk] = 0;
-            for (var tt = 0; tt < priSectionDate[kk].length - 1; tt++) {
-                var start = new Date(priSectionDate[kk][tt]);
-                var end = new Date(priSectionDate[kk][tt + 1]);
+            // for (var tt = 0; tt < priSectionDate[kk].length - 1; tt++) {
+            //     var start = new Date(priSectionDate[kk][tt]);
+            //     var end = new Date(priSectionDate[kk][tt + 1]);
+            //     interAmount[kk] = interAmount[kk] + ((start.betweenDays(end)) * loanPerTermBal[interIndex[kk][tt]] * 0.04 / 360);
+            // }
+
+            for (var tt = priSectionDate[kk].length - 1; tt > 0; tt--) {
+                var end = new Date(priSectionDate[kk][tt]);
+                var start = new Date(priSectionDate[kk][tt - 1]);
                 interAmount[kk] = interAmount[kk] + ((start.betweenDays(end)) * loanPerTermBal[interIndex[kk][tt]] * 0.04 / 360);
             }
         };
         console.log('interAmount', interAmount);
+
+        var totalTerms = (loanTerms.concat(interTerms)).sort();
+        console.log(totalTerms);
+        var totalAmountTerms = [];
+
+        var totalAmountTerms = function(perTermPri, loanTerms) {
+            for (var hhh = 0; hhh < loanTerms.length; hhh++) {
+                totalAmountTerms.push(perTermPri);
+            }
+
+            return totalAmountTerms;
+            // 
+        }(perTermPri, loanTerms);
+
+        function sortNumber(a, b) {
+            return a - b
+        }
+        totalAmountTerms = (totalAmountTerms.concat(interAmount)).sort(sortNumber);
+        console.log(totalAmountTerms);
+        var maxAmount = totalAmountTerms[totalAmountTerms.length];
+
+        var priDrawIndex = loanTerms.map(function(d) {
+            return totalTerms.indexOf(d);
+        });
+        console.log(priDrawIndex);
+        var interDrawIndex = interTerms.map(function(d) {
+            return totalTerms.indexOf(d);
+        });
+        console.log(interDrawIndex);
     </script>
 </body>
 

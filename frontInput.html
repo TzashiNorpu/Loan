@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html>
+<script type="text/javascript" src="date-zh-CN.js">
+</script>
+
+<head>
+    <title>JavaScript Loan Calculator</title>
+    <style>
+        /* Calculated values in bold */
+        
+        #graph {
+            border: solid black 1px;
+        }
+        /* Chart has a simple border */
+        
+        th,
+        td {
+            vertical-align: top;
+        }
+        /* Don't center table cells */
+    </style>
+</head>
+
+<body>
+    <!--
+  This is an HTML table with <input> elements that allow the user to enter data
+  and <span> elements in which the program can display its results.
+  These elements have ids like "interest" and "years". These ids are used
+  in the JavaScript code that follows the table. Note that some of the input
+  elements define "onchange" or "onclick" event handlers. These specify strings
+  of JavaScript code to be executed when the user enters data or clicks.
+-->
+    <table width=40% style="float:left">
+        <tr style="float:left">
+            <th>Enter Loan Data:</th>
+            <td></td>
+        </tr>
+        <tr>
+            <td>Amount of the loan :</td>
+            <td><input id="amount"></td>
+            <!-- <td rowspan=8> -->
+            <!-- 导致多行输入栏之间间隔不一致 -->
+            <!-- <canvas id="graph" width="400" height="250"></canvas></td> -->
+        </tr>
+        <tr>
+            <td>Annual interest :</td>
+            <td><input id="rate"></td>
+        </tr>
+        <!-- *********************************** -->
+        <tr>
+            <td>Annual Days :</td>
+            <td><input id="daysOfYear"></td>
+        </tr>
+        <tr>
+            <td>Loan begin date :</td>
+            <td><input id="loanBeginDate"></td>
+        </tr>
+        <tr>
+            <td>Loan period :</td>
+            <td><input id="loanPeriod"></td>
+        </tr>
+        <tr>
+            <td>Loan period type :</td>
+            <td><input id="loanPeriodType"></td>
+        </tr>
+        <tr>
+            <td>Current Term Repayment :</td>
+            <td><input id="prinCurTermFlag"></td>
+        </tr>
+        <tr>
+            <td>Repayment principal repiod :</td>
+            <td><input id="prinPeriod"></td>
+        </tr>
+        <tr>
+            <td>Repayment principal repiod type :</td>
+            <td><input id="prinPeriodType"></td>
+        </tr>
+        <tr>
+            <td>Repayment principal date :</td>
+            <td><input id="prinDate"></td>
+        </tr>
+        <!-- <tr>
+            <td>Repayment principal type :</td>
+            <td><input id="priTermsStepType" ></td>
+        </tr> -->
+
+        <tr>
+            <td>Repayment interest repiod :</td>
+            <td><input id="interPeriod"></td>
+        </tr>
+        <tr>
+            <td>Repayment interest period type :</td>
+            <td><input id="interPeriodType"></td>
+        </tr>
+        <tr>
+            <td>Repayment interest date :</td>
+            <td><input id="interDate"></td>
+        </tr>
+        <!-- <tr>
+            <td>Repayment interest type :</td>
+            <td><input id="interTermsStepType" ></td>
+        </tr> -->
+        <tr>
+            <th>Calculate:</th>
+            <td><button onclick="calculate();">Calculate</button></td>
+        </tr>
+    </table>
+    <table width=40% style="float:left">
+        <tr style="float:left">
+            <th>Loan Repayment Terms: </th>
+            <td></td>
+        </tr>
+        <tr>
+            <!-- <th>principal Terms:</th> -->
+            <td rowspan=8>
+                <!-- 导致多行输入栏之间间隔不一致 -->
+                <canvas id="graph" width="400" height="250"></canvas>
+            </td>
+        </tr>
+        <!-- *********************************** -->
+
+    </table>
+
+    <!-- The rest of this example is JavaScript code in the <script> tag below -->
+    <!-- Normally, this script would go in the document <head> above but it -->
+    <!-- is easier to understand here, after you've seen its HTML context. -->
+    <script>
+        "use strict"; // Use ECMAScript 5 strict mode in browsers that support it
+
+        /*
+         * This script defines the calculate() function called by the event handlers
+         * in HTML above. The function reads values from <input> elements, calculates
+         * loan payment information, displays the results in <span> elements. It also
+         * saves the user's data, displays links to lenders, and draws a chart.
+         */
+        function calculate() {
+            // Look up the input and output elements in the document
+            var uloanBeginDate = document.getElementById("loanBeginDate");
+            var uloanPeriod = document.getElementById("loanPeriod");
+            var uloanPeriodType = document.getElementById("loanPeriodType");
+            var uprinPeriod = document.getElementById("prinPeriod");
+            var uprinPeriodType = document.getElementById("prinPeriodType");
+            var uprinDate = document.getElementById("prinDate");
+            var uinterPeriodType = document.getElementById("interPeriodType");
+            var uinterPeriod = document.getElementById("interPeriod");
+            var uinterDate = document.getElementById("interDate");
+            var uamount = document.getElementById("amount");
+            var urate = document.getElementById("rate");
+            var udaysOfYear = document.getElementById("daysOfYear");
+            var uprinCurTermFlag = document.getElementById("prinCurTermFlag");
+
+            var prinFlag = false;
+            var interFlag = false;
+            var loanEndDate;
+            var priTermsStepType;
+            var interTermsStepType;
+            var loanTerms = [];
+            var interTerms = [];
+            var testDateStr = uloanBeginDate.value;
+
+            var loanBeginDate = Date.parse(uloanBeginDate.value);
+            var loanPeriod = parseFloat(uloanPeriod.value);
+            var loanPeriodType = uloanPeriodType.value;
+            var prinPeriod = parseFloat(uprinPeriod.value);
+            var prinPeriodType = uprinPeriodType.value;
+            var prinDate = parseFloat(uprinDate.value);
+            var interPeriod = parseFloat(uinterPeriod.value);
+            var interPeriodType = uinterPeriodType.value;
+            var interDate = parseFloat(uinterDate.value);
+            var amount = parseFloat(uamount.value);
+            var rate = parseFloat(urate.value);
+            var daysOfYear = parseFloat(udaysOfYear.value);
+            var prinCurTermFlag = Boolean(uprinCurTermFlag.value);
+
+
+            //test
+            // var testDateStr = '20/1/2013'; //还息日和还本日都用此变量计算,由前端输入
+            // var loanBeginDate = new Date.parse(testDateStr);
+            // var loanEndDate;
+            // var loanPeriod = 12; //贷款的有效时间loan_period划定为:贷款起息日到贷款止日,由前端输入
+            // var loanPeriodType = 'month'; //由前端选择
+            // var prinPeriod = 8; // 贷款还本间隔,默认为月,由前端输入
+            // var prinPeriodType = 'day'; //还本间隔类型
+            // var prinPeriod = 1; // 贷款还本间隔,默认为月,由前端输入
+            // var prinPeriodType = 'month'; //还本间隔类型
+            // var prinDate = 20; //贷款还款日指定，由前端输入
+
+            // var interPeriodType = 'day'; //还息间隔类型
+            // var interPeriod = 17; //贷款还息间隔,默认为月，由前端输入
+            // var interPeriodType = 'month'; //还息间隔类型
+            // var interPeriod = 1; //贷款还息间隔,默认为月，由前端输入
+
+            // var interDate = 20; //贷款还息日指定，由前端输入
+
+            // var loanTerms = []; //贷款周期还本日期
+            // var interTerms = []; //贷款周期还息日期
+
+            // var amount = 140000; //贷款本金
+            // var rate = 0.04; //年利率
+            // var daysOfYear = 360; //记准年天数
+
+            // var priTermsStepType; //还本周期类型,由前端输入
+            // var interTermsStepType; //还息周期类型,由前端输入
+
+            // var prinCurTermFlag = true; //是否当期还本标志,取前端输入的值
+            // var prinFlag = false; //还本间隔是否为月标志
+            // var interFlag = false; //还息间隔是否为月标志
+
+            // // console.log(loanBeginDate.toString('yyyy-MM-dd'));
+            // // console.log(loanEndDate.toString('yyyy-MM-dd'));
+            // //end
+
+
+
+            switch (loanPeriodType) {
+                case 'year':
+                    loanEndDate = new Date.parse(testDateStr).addYears(loanPeriod);
+                    break;
+                case 'month':
+                    loanEndDate = new Date.parse(testDateStr).addMonths(loanPeriod);
+                    break;
+                case 'week':
+                    loanEndDate = new Date.parse(testDateStr).addWeeks(loanPeriod);
+                    break;
+                case 'days':
+                    loanEndDate = new Date.parse(testDateStr).addDays(loanPeriod);
+                    break;
+                default:
+                    console.log("Error:No Loan Period Type,Can't Calculate Loan End Date.");
+                    break;
+            }
+
+
+
+            String.prototype.format = function() {
+                if (arguments.length == 0) return this;
+                for (var s = this, i = 0; i < arguments.length; i++)
+                    s = s.replace(new RegExp("\\{" + i + "\\}", "g"), arguments[i]);
+                return s;
+            };
+
+
+            Date.prototype.betweenDays = function(end) {
+                // console.log(end.toString('yyyy-MM-dd'));
+                // console.log(this.toString('yyyy-MM-dd'));
+                return Math.ceil((end.getTime() - this.getTime()) / (24 * 60 * 60 * 1000));
+            };
+            // console.log(loanBeginDate.betweenDays(loanEndDate));
+            // Date.prototype.between = function(start, end) {
+            //     if (this != null && start != null && end != null)
+            //         return this.getTime() >= start.getTime() && this.getTime() <= end.getTime();
+            //     else
+            //         return null;
+
+            // }
+
+            switch (prinPeriodType) {
+                case 'year':
+                    priTermsStepType = 'addYears';
+                    break;
+                case 'month':
+                    priTermsStepType = 'addMonths';
+                    break;
+                case 'day':
+                    priTermsStepType = 'addDays';
+                    break;
+                default:
+                    console.log("Error:No Principal Term Step Type,Can't Calculate Loan Terms.");
+                    break;
+
+            }
+
+            //设贷款发放日为3月13号,贷款指定还款日为15号,还款间隔为1个月,则首个还款日为当前3月15号还是下一期4月15号的选择
+            //示例为下一期还本方法的还本期数和还本日期
+
+            //当期还款：
+            //贷款发放日>贷款还本指定日:
+            //1月20日放款:还本周期1个月,13日还款--2月13,3月13....;还本周期两个月,13日还款--2月13,4月13....
+            //贷款发放日=贷款还本指定日:
+            //1月20日放款:还本周期1个月,20日还款--1月20,2月20....;还本周期两个月,20日还款--1月20,3月20....待确定
+            //1月20日放款:还本周期1个月,20日还款--2月20,3月20....;还本周期两个月,20日还款--3月20,5月20....待确定
+            //贷款发放日<贷款还本指定日
+            //1月20日放款:还本周期1个月,24日还款--1月24,2月24....;还本周期两个月,24日还款--1月24,3月24....
+            //下一期还款:
+            //贷款发放日>贷款还本指定日:
+            //1月20日放款:还本周期1个月,13日还款--2月13,3月13....;还本周期两个月,13日还款--3月13,5月13....
+            //贷款发放日=贷款还本指定日:
+            //1月20日放款:还本周期1个月,20日还款--2月20,3月20....;还本周期两个月,20日还款--3月20,5月20....
+            //贷款发放日<贷款还本指定日:
+            //1月20日放款:还本周期1个月,25日还款--2月25,3月25....;还本周期两个月,25日还款--3月25,5月25....
+
+
+            var testDate = new Date.parse(testDateStr); //临时变量,用于计算贷款还本分期的各个日期
+
+            if (prinPeriodType == 'day') {
+                prinFlag = true;
+            };
+            // console.log(prinFlag);
+            //还款间隔为月：指定日
+            if (prinCurTermFlag && !prinFlag) {
+                // console.log(loanBeginDate.getDate());
+                if (loanBeginDate.getDate() >= prinDate) {
+                    console.log('priTerms***********');
+                    eval(" for (testDate.{0}(1); testDate.between(loanBeginDate, loanEndDate); testDate.{0}(prinPeriod)) {\
+                        loanTerms.push(testDate.set({  day: prinDate }).toString('yyyy-MM-dd'));\
+                        }\ ".format(priTermsStepType));
+                    if (!loanTerms.some(function(x) {
+                            return x == loanEndDate.toString('yyyy-MM-dd');
+                        })) {
+                        loanTerms.push(loanEndDate.toString('yyyy-MM-dd'));
+                    }
+                    console.log("loanTerms:", loanTerms);
+                } else {
+                    console.log('priTerms+++++++++++');
+                    eval(" for (testDate; testDate.between(loanBeginDate, loanEndDate); testDate.{0}(prinPeriod)) {\
+                        loanTerms.push(testDate.set({  day: prinDate }).toString('yyyy-MM-dd'));\
+                        }\ ".format(priTermsStepType));
+                    if (!loanTerms.some(function(x) {
+                            return x == loanEndDate.toString('yyyy-MM-dd');
+                        })) {
+                        loanTerms.push(loanEndDate.toString('yyyy-MM-dd'));
+                    }
+                    console.log("loanTerms:", loanTerms);
+                }
+
+            } else if (!prinCurTermFlag && !prinFlag) {
+                console.log('priTerms----------');
+                eval(" for (testDate.{0}(prinPeriod); testDate.between(loanBeginDate, loanEndDate); testDate.{0}(prinPeriod)) {\
+            loanTerms.push(testDate.set({\
+                day: prinDate\
+            }).toString('yyyy-MM-dd'));\
+            }\ ".format(priTermsStepType));
+
+                if (!loanTerms.some(function(x) {
+                        return x == loanEndDate.toString('yyyy-MM-dd');
+                    })) {
+                    loanTerms.push(loanEndDate.toString('yyyy-MM-dd'));
+                }
+                console.log("loanTerms:", loanTerms);
+            };
+            // console.log(testDate.toString('yyyy-MM-dd'), testDate.addDays(14).toString('yyyy-MM-dd'));
+            var testDate = new Date.parse(testDateStr);
+            // console.log(priTermsStepType);
+            //还款间隔指定多日：无指定日
+            if (prinCurTermFlag && prinFlag) {
+                // console.log(loanBeginDate.getDate());
+                console.log('priTerm:$$$$$$$$$$$$$$');
+                eval(" for (testDate.{0}(prinPeriod); testDate.between(loanBeginDate, loanEndDate); testDate.{0}(prinPeriod)) {\
+                        loanTerms.push(testDate.toString('yyyy-MM-dd'));\
+                        }\ ".format(priTermsStepType));
+                if (!loanTerms.some(function(x) {
+                        return x == loanEndDate.toString('yyyy-MM-dd');
+                    })) {
+                    loanTerms.push(loanEndDate.toString('yyyy-MM-dd'));
+                }
+                console.log("loanTerms:", loanTerms);
+            };
+            // console.log('Loan Terms calculate End!!!!!!!!');
+
+
+
+            //设贷款发放日为3月13号,贷款指定结息日为20号,还款间隔为1个月,则首个还息日为当期3月20号还是下一期4月20号的选择
+            //示例为下一期还息方法的还息期数和还息日期
+
+            //当期还款：
+            //贷款发放日>贷款还本指定日:
+            //1月20日放款:17日还利息
+            //还息周期1个月：还息时间为--2月17,3月17
+            //还息周期2个月：还息时间为--2月17,4月17
+            //贷款发放日=贷款还息指定日
+            //1月20日放款:20日还息
+            //还息周期1个月：还息时间为--1月20,2月20
+            //还息周期2个月：还息时间为--1月20,3月20
+            //贷款发放日<贷款还本指定日
+            //1月20日放款:25日还息
+            //还本周期1个月：还息时间为--1月25,2月25
+            //还本周期2个月：还息时间为--1月25,3月25
+
+            //下一期还款：
+            //贷款发放日>贷款还本指定日:
+            //1月20日放款:17日还利息
+            //还息周期1个月：还息时间为--2月17,3月17
+            //还息周期2个月：还息时间为--2月17,4月17
+            //贷款发放日=贷款还息指定日
+            //1月20日放款:20日还息
+            //还息周期1个月：还息时间为--2月20,3月20
+            //还息周期2个月：还息时间为--3月20,5月20
+            //贷款发放日<贷款还本指定日
+            //1月20日放款:25日还息
+            //还本周期1个月：还息时间为--2月25,3月25
+            //还本周期2个月：还息时间为--2月25,4月25
+
+            switch (interPeriodType) {
+                case 'year':
+                    interTermsStepType = 'addYears';
+                    break;
+                case 'month':
+                    interTermsStepType = 'addMonths';
+                    break;
+                case 'day':
+                    interTermsStepType = 'addDays';
+                    break;
+                default:
+                    console.log("Error:No Interest Term Step Type,Can't Calculate Inter Terms.");
+                    break;
+
+            };
+
+            var testDate = new Date.parse(testDateStr); //临时变量,用于计算贷款还息分期的各个日期
+
+            if (interPeriodType == 'day') {
+                interFlag = true;
+            };
+            // console.log('jjjjjjj', prinCurTermFlag, interFlag);
+            if (prinCurTermFlag && !interFlag) {
+                // console.log(loanBeginDate.getDate());
+                if (loanBeginDate.getDate() >= interDate) {
+                    console.log('interTerms***********');
+                    eval(" for (testDate.{0}(1); testDate.between(loanBeginDate, loanEndDate); testDate.{0}(interPeriod)) {\
+                        interTerms.push(testDate.set({  day: interDate }).toString('yyyy-MM-dd'));\
+                        }\ ".format(interTermsStepType));
+                    if (!interTerms.some(function(x) {
+                            return x == loanEndDate.toString('yyyy-MM-dd');
+                        })) {
+                        interTerms.push(loanEndDate.toString('yyyy-MM-dd'));
+                    }
+                    console.log("interTerms:", interTerms);
+                } else {
+                    console.log('interTerms++++++++++++++');
+                    eval(" for (testDate; testDate.between(loanBeginDate, loanEndDate); testDate.{0}(interPeriod)) {\
+                        interTerms.push(testDate.set({  day: interDate }).toString('yyyy-MM-dd'));\
+                        }\ ".format(interTermsStepType));
+                    if (!interTerms.some(function(x) {
+                            return x == loanEndDate.toString('yyyy-MM-dd');
+                        })) {
+                        interTerms.push(loanEndDate.toString('yyyy-MM-dd'));
+                    }
+                    console.log("interTerms:", interTerms);
+                }
+
+            } else if (!prinCurTermFlag && !interFlag) {
+                console.log('interTerms----------');
+                eval(" for (testDate.{0}(interPeriod); testDate.between(loanBeginDate, loanEndDate); testDate.{0}(interPeriod)) {\
+            interTerms.push(testDate.set({\
+                day: interDate\
+            }).toString('yyyy-MM-dd'));\
+            }\ ".format(interTermsStepType));
+
+                if (!interTerms.some(function(x) {
+                        return x == loanEndDate.toString('yyyy-MM-dd');
+                    })) {
+                    interTerms.push(loanEndDate.toString('yyyy-MM-dd'));
+                }
+                console.log("interTerms:", interTerms);
+            };
+            if (prinCurTermFlag && interFlag) {
+                console.log('interTerms$$$$$$$$$$$$');
+                eval(" for (testDate.{0}(interPeriod); testDate.between(loanBeginDate, loanEndDate); testDate.{0}(interPeriod)) {\
+            interTerms.push(testDate.toString('yyyy-MM-dd'));\
+            }\ ".format(interTermsStepType));
+
+                if (!interTerms.some(function(x) {
+                        return x == loanEndDate.toString('yyyy-MM-dd');
+                    })) {
+                    interTerms.push(loanEndDate.toString('yyyy-MM-dd'));
+                }
+                console.log("interTerms:", interTerms);
+            };
+
+            var perTermPri = amount / loanTerms.length;
+
+            //每期贷款余额
+            var loanPerTermBal = [];
+            for (var i = 0; i < loanTerms.length; i++) {
+                loanPerTermBal.push(amount - perTermPri * i);
+            }
+            console.log("loanPerTermBal:", loanPerTermBal);
+
+
+
+            //每期应还利息的本金是否跨段
+            // var priSectionFlag = interTerms.map(function(x) {
+            //     return loanTerms.some(function(p) {
+            //         return eval("Date.parse(p).between(Date.parse(x).{0}(-interPeriod), Date.parse(x))".format(interTermsStepType));
+            //         // return Date.parse(p).between(Date.parse(x).addMonths(-interPeriod), Date.parse(x));
+            //     });
+            // });
+            // console.log("priSectionFlag:", priSectionFlag);
+
+
+            //还息区间本金跨段日期
+            var priSectionDate = interTerms.map(function(x, i) {
+                return loanTerms.filter(function(k) {
+                    if (Date.parse(k).between(Date.parse(interTerms[i - 1] || loanBeginDate.toString('yyyy-MM-dd')), Date.parse(interTerms[i])))
+                    // if (eval("Date.parse(k).between(Date.parse(x).{0}(-interPeriod), Date.parse(x).addDays(-1))".format(interTermsStepType)))
+                    //还本还息日和贷款发放日在同一天时有问题
+                        return k;
+                    else
+                        return null;
+                });
+            });
+            // console.log("priSectionDate:", priSectionDate);
+
+            //利息计算：查找利息计算区间内相关的所有日期：计息区间的起终点日期和本金分段的日期
+            priSectionDate.map(function(x, i) {
+                if (x.indexOf(interTerms[i - 1]) == -1) {
+                    x.unshift(interTerms[i - 1] || loanBeginDate.toString('yyyy-MM-dd'));
+                };
+                if (x.indexOf(interTerms[i]) == -1) {
+                    x.push(interTerms[i]);
+                };
+            });
+
+            console.log('priSectionDate', priSectionDate);
+
+            //利息计算：查找利息计算区间所有日期在还本日中的位置
+            var interIndex = priSectionDate.map(function(c) {
+                return c.map(function(j) {
+                    return loanTerms.filter(function(x) {
+                        return x < j;
+                    }).length;
+                });
+            });
+            console.log("interIndex:", interIndex);
+
+            //利息计算：根据利息计算区间内日期和相应的本金计算该区间内的利息
+            var interAmount = [];
+            for (var kk = 0; kk < priSectionDate.length; kk++) {
+                interAmount[kk] = 0;
+                // for (var tt = 0; tt < priSectionDate[kk].length - 1; tt++) {
+                //     var start = new Date(priSectionDate[kk][tt]);
+                //     var end = new Date(priSectionDate[kk][tt + 1]);
+                //     interAmount[kk] = interAmount[kk] + ((start.betweenDays(end)) * loanPerTermBal[interIndex[kk][tt]] * 0.04 / 360);
+                // }
+
+                for (var tt = priSectionDate[kk].length - 1; tt > 0; tt--) {
+                    var end = new Date(priSectionDate[kk][tt]);
+                    var start = new Date(priSectionDate[kk][tt - 1]);
+                    interAmount[kk] = interAmount[kk] + ((start.betweenDays(end)) * loanPerTermBal[interIndex[kk][tt]] * 0.04 / 360);
+                }
+            };
+            console.log('interAmount', interAmount);
+
+            var graph = document.getElementById("graph"); // Get the <canvas> tag
+            graph.width = graph.width; // Magic to clear and reset the canvas element
+
+            var g = graph.getContext("2d");
+            var width = graph.width,
+                height = graph.height; // Get canvas size
+
+            var perWidth = width / loanTerms.length;
+            var interPerWidth = width / interAmount.length;
+
+            function drawRec(x1, y1, x2, y2) {
+                g.fillStyle = '#FF0000';
+                g.fillRect(x1, y1, x2, y2);
+            }
+
+            // for (var h = 0; h < loanPerTermBal.length; h++) {
+            //     drawRec(h * perWidth, height - perTermPri / amount * height, perWidth, perTermPri / amount * height);
+            // }
+
+            for (var mm = 0; mm < interAmount.length; mm++) {
+                drawRec(mm * interPerWidth, height - interAmount[mm] / amount * height * 200, interPerWidth, interAmount[mm] / amount * height * 200);
+            }
+
+        }
+    </script>
+</body>
+
+</html>
